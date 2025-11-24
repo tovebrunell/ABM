@@ -1,4 +1,3 @@
-from Modell import SIRModel
 from mesa import Agent, Model
 from mesa.space import MultiGrid
 import random
