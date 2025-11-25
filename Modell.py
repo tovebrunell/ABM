@@ -2,7 +2,6 @@ from Agenter import SIRAgent
 from mesa import Agent, Model
 from mesa.space import MultiGrid
 import random
-from Agenter import SIRAgent 
 
 class SIRModel(Model):
     def __init__(self, N, width, height, initial_infected=1, vaccination_rate=0.0, mortality_rate=0.01):
