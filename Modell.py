@@ -6,6 +6,7 @@ import random
 class SIRModel(Model):
     def __init__(self, N, width, height, initial_infected=1, vaccination_rate=0.0, mortality_rate=0.01):
         super().__init__()
+        self.infection_log = []  # lista med alla infektioner
         self.num_agents = N
         self.grid = MultiGrid(width, height, True)
         self.mortality_rate = mortality_rate
@@ -37,3 +38,11 @@ class SIRModel(Model):
     # Funktion för att räkna antal agenter med viss status
     def count_status(self, status):
         return sum(1 for a in self.agent_list if a.status == status)
+        
+    # Funktion för att logga infection
+    def log_infection(self, agent):
+        self.infection_log.append({
+            "case_id": agent.unique_id,
+            "infector_id": agent.infector_id,
+            "day": len(self.infection_log)  
+        })
