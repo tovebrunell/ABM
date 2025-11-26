@@ -13,6 +13,9 @@ class SIRModel(Model):
 
         # Agentlista (inte self.agents)
         self.agent_list = []
+        
+        # Lista för att spara Re över tid 
+        self.Re_history = []
 
         for i in range(N):
             vaccinated = self.random.random() < vaccination_rate
@@ -34,6 +37,15 @@ class SIRModel(Model):
         #self.datacollector.collect(self)   # Detta är en data collector som han använder i föreläsningsexmplet och är rätt bra men är inte implementerad ännu.
         self.agents.shuffle_do("step")
 
+        secondary = {}
+        for event in self.infection_log:
+            inf = event["infector_id"]
+            if inf is not None:
+                secondary[inf] = secondary.get(inf, 0) + 1
+
+        Re = sum(secondary.values()) / len(secondary) if secondary else 0
+        self.Re_history.append(Re)
+
     # Funktion för att räkna antal agenter med viss status
     def count_status(self, status):
         return sum(1 for a in self.agent_list if a.status == status)
@@ -44,4 +56,6 @@ class SIRModel(Model):
             "case_id": agent.unique_id, # vem har blivit smittad
             "infector_id": agent.infector_id, # vem har smittat
             "day": len(self.infection_log)  # Vilken dag? 
+
+
         })
