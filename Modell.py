@@ -44,6 +44,7 @@ class SIRModel(Model):
             if event["day"] == self.current_day: 
                 
                 inf = event["infector_id"]
+                
                 if inf is not None:
                     secondary[inf] = secondary.get(inf, 0) + 1
 
@@ -61,7 +62,7 @@ class SIRModel(Model):
         self.infection_log.append({
             "case_id": agent.unique_id, # vem har blivit smittad
             "infector_id": agent.infector_id, # vem har smittat
-            "day": len(self.infection_log)  # Vilken dag? 
+            "day": self.current_day  # Vilken dag? 
 
 
         })
