@@ -31,9 +31,8 @@ class SIRModel(Model):
             self.grid.place_agent(agent, (x, y))
 
     def step(self):
-        self.random.shuffle(self.agent_list)
-        for agent in self.agent_list:
-            agent.step()
+        #self.datacollector.collect(self)   # Detta är en data collector som han använder i föreläsningsexmplet och är rätt bra men är inte implementerad ännu.
+        self.agents.shuffle_do("step")
 
     # Funktion för att räkna antal agenter med viss status
     def count_status(self, status):
