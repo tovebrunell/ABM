@@ -17,6 +17,8 @@ class SIRModel(Model):
         # Lista för att spara Re över tid 
         self.Re_history = []
 
+        self.current_day = 0
+
         for i in range(N):
             vaccinated = self.random.random() < vaccination_rate
             if i < initial_infected:
@@ -39,12 +41,16 @@ class SIRModel(Model):
 
         secondary = {}
         for event in self.infection_log:
-            inf = event["infector_id"]
-            if inf is not None:
-                secondary[inf] = secondary.get(inf, 0) + 1
+            if event["day"] == self.current_day: 
+                
+                inf = event["infector_id"]
+                if inf is not None:
+                    secondary[inf] = secondary.get(inf, 0) + 1
 
         Re = sum(secondary.values()) / len(secondary) if secondary else 0
         self.Re_history.append(Re)
+
+        self.current_day += 1 
 
     # Funktion för att räkna antal agenter med viss status
     def count_status(self, status):
