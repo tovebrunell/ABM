@@ -1,17 +1,8 @@
-import importlib
-import Agenter
-import Modell
-
-importlib.reload(Agenter)
-importlib.reload(Modell)
-
-from Modell import SIRModel
-
-from Agenter import SIRAgent
-from mesa import Agent, Model
-from mesa.space import MultiGrid
-import random
+import pandas as pd
 import numpy as np
 
-topography = np.zeros((70, 140), dtype=int)
+# Läs in kalkylarket som beskriver topografin
+df = pd.read_excel("Topografi karta.xlsx", header=None)
 
+# Konvertera direkt till en NumPy matrix
+matrix = df.to_numpy()
