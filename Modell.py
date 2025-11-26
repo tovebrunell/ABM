@@ -42,7 +42,7 @@ class SIRModel(Model):
     # Funktion för att logga infection
     def log_infection(self, agent):
         self.infection_log.append({
-            "case_id": agent.unique_id,
-            "infector_id": agent.infector_id,
-            "day": len(self.infection_log)  
+            "case_id": agent.unique_id, # vem har blivit smittad
+            "infector_id": agent.infector_id, # vem har smittat
+            "day": len(self.infection_log)  # Vilken dag? 
         })

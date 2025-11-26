@@ -38,13 +38,13 @@ class SIRAgent(Agent):
         if other.status == "S" or other.status == "R": 
             if other.status == "R":
                 # Vaccinerade har 3% risk att bli smittade
-                infection_chance = 0.03 * 0.19 # Ska vi ta gånger beta? 
+                infection_chance = 0.03 * 0.19 # Ska vi ta gånger beta? räkna om Beta sen
             else:
-                infection_chance = 1.0 * 0.19 # Ska vi ta gånger beta? 
+                infection_chance = 1.0 * 0.19 # Ska vi ta gånger beta? Räkna om beta sen 
                 
             if self.random.random() < infection_chance:
                 other.status = "I" ## Detta leder till att alla som är icke vaccinerade blir sjuka, detta behöver vi ändra
-                other.infector_id = self.unique_id # logga vem som smittade
+                other.infector_id = self.unique_id # logga vem som smittade (du sparar att jag har smittat dig) 
                 self.model.log_infection(other) # lägg till i modellens logg 
                 
 
