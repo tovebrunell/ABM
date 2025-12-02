@@ -4,8 +4,8 @@ from mesa.space import MultiGrid
 from mesa.datacollection import DataCollector
 import random
 
-def compute_Re(self, current_infected_count):
-        return SIRAgent.get_new_infected(SIRAgent) / current_infected_count if current_infected_count else 0
+def compute_Re(self):
+        return SIRAgent.get_new_infected(SIRAgent) / self.count_status("I") if self.count_status("I") else 0
 
 class SIRModel(Model):
     def __init__(self, N, width, height, initial_infected=1, vaccination_rate=0.0, mortality_rate=0.01):
@@ -54,19 +54,11 @@ class SIRModel(Model):
         #self.datacollector.collect(self)   # Detta är en data collector som han använder i föreläsningsexmplet och är rätt bra men är inte implementerad ännu.
 
         current_infected_count = self.count_status("I")
+        self.datacollector.collect(self)
         
         self.agents.shuffle_do("step")
 
-        secondary = {}
-        for event in self.infection_log:
-            if event["day"] == self.current_day: 
-                
-                inf = event["infector_id"]
-                
-                if inf is not None:
-                    secondary[inf] = secondary.get(inf, 0) + 1
-
-        Re = compute_Re(self, current_infected_count)
+        Re = compute_Re(self)
         
         self.Re_history.append(Re)
         SIRAgent.reset_new_infected(SIRAgent)
@@ -82,7 +74,7 @@ class SIRModel(Model):
         self.infection_log.append({
             "case_id": agent.unique_id, # vem har blivit smittad
             "infector_id": agent.infector_id, # vem har smittat
-            "day": len(self.infection_log)  # Vilken dag? 
+            "day": len(self.infection_log),  # Vilken dag? 
             "day": self.current_day  # Vilken dag? 
 
 
