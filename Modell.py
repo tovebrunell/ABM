@@ -82,7 +82,7 @@ class SIRModel(Model):
         self.infection_log.append({
             "case_id": agent.unique_id, # vem har blivit smittad
             "infector_id": agent.infector_id, # vem har smittat
-            "day": len(self.infection_log)  # Vilken dag? 
+            "day": len(self.infection_log),  # Vilken dag? 
             "day": self.current_day  # Vilken dag? 
 
 
