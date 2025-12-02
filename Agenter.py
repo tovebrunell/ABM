@@ -3,13 +3,44 @@ from mesa.space import MultiGrid
 import random
 
 class SIRAgent(Agent): 
-    """ Class för Agenterna:  SYFTE, INPUT, OUTPUT 
-    """ 
-    new_infected = 0
-    def __init__(self, unique_id, model, status="S", vaccinated=False):
-        """ Initierar SIR agent objects. 
+    """
+    Agentklass för ett SIR-system i en smittspridningsmodell.
 
+    Syfte:
+        Representerar en individ som kan röra sig, infektera andra,
+        samt byta status mellan S (susceptible), I (infected),
+        R (recovered) och D (dead).
+
+    Input:
+        unique_id (int): Unikt ID för agenten.
+        model (mesa.Model): Modellinstans som agenten tillhör.
+        status (str): Initial hälsostatus ("S", "I", "R" eller "D"). Default="S".
+        vaccinated (bool): Om agenten är vaccinerad. Påverkar infektionstrolighet.
+
+    Output:
+        En instans av SIRAgent.
+    """
+    
+    new_infected = 0
+    
+    def __init__(self, unique_id, model, status="S", vaccinated=False):
+        
+       
         """
+        Syfte:
+            Initierar en SIR-agent med status, vaccinationstillstånd och trackar
+            infektionstillstånd över tid.
+
+        Input:
+            unique_id (int): Agentens unika ID.
+            model (Model): Modellen agenten tillhör.
+            status (str): Startstatus ("S", "I", "R", "D").
+            vaccinated (bool): Om agenten är vaccinerad.
+
+        Output:
+            Inga direkta return-värden. Initialiserar instansvariabler.
+        """
+        
         super().__init__(model)  # bara model!
         self.unique_id = unique_id  # sätt unik ID själv
         self.status = status        # "S", "I", "R", "D"
@@ -18,10 +49,18 @@ class SIRAgent(Agent):
         self.infector_id = None # Hur många personer den har smittat
 
     def move(self):
-        """ Definierar move funktionen 
-        - ser till att agenten uppdaterar sin position. 
-        
         """
+        Syfte:
+            Uppdaterar agentens position genom att flytta den till en slumpmässig
+            intilliggande cell (kan även vara diagonalt).
+
+        Input:
+            Inga funktionella inputs (använder modellens grid och agentens aktuella position).
+
+        Output:
+            Flyttar agenten till en ny position i modellen.
+        """
+        
         possible_steps = self.model.grid.get_neighborhood(
             self.pos,
             moore=True, # kan gå diagonalt 
@@ -31,10 +70,19 @@ class SIRAgent(Agent):
         self.model.grid.move_agent(self, new_position) # uppdaterar position
 
     def try_infect(self, other):
-        """ Definierar funktion för att infektera andra om 
-        agenten är infekterad. 
-
         """
+        Syfte:
+            Försöker infektera en annan agent som befinner sig i samma cell.
+
+        Input:
+            other (SIRAgent): Den agent som eventuellt ska infekteras.
+
+        Output:
+            Ändrar 'other.status' till "I" vid lyckad infektion.
+            Loggar infektionen i modellen.
+            Uppdaterar SIRAgent.new_infected vid smittspridning.
+        """
+        
         if other.status == "S" or other.status == "R": 
             if other.status == "R":
                 # Vaccinerade har 3% risk att bli smittade
@@ -50,20 +98,50 @@ class SIRAgent(Agent):
                 SIRAgent.new_infected += 1
 
     def get_new_infected(self):
+        """
+        Syfte:
+            Returnerar det totala antalet nya infektioner under nuvarande tidssteg.
+
+        Input:
+            Inga.
+
+        Output:
+            (int): Antalet nya infektioner detta tidssteg.
+        """
         return SIRAgent.new_infected
 
     def reset_new_infected(self):
+        """
+        Syfte:
+            Nollställer räknaren för nya infektioner inför nästa tidssteg.
+
+        Input:
+            Inga.
+
+        Output:
+            Inga (uppdaterar klassvariabeln SIRAgent.new_infected).
+        """
+        
         SIRAgent.new_infected = 0
                 
 
     def step(self):
-        """ Definierar funktion för vad som händer när ett steg tas. 
-        Olika beroende på vilken status - dvs S, I, R eller D, agenten har. 
-        Kallar på move funktionen om agenten ej är död. 
-        Om ej död initeras eventuellt infektering, dödsrisk checkas 
-        och ökat antalet dagar sjuk och återhämtning uppdateras. 
+        """
+        Syfte:
+            Definierar agentens beteende per tidssteg beroende på dess status.
+            - Döda agenter gör inget.
+            - Levande agenter rör sig.
+            - Infekterade agenter försöker smitta andra.
+            - Ökar antal dagar sjuka.
+            - Hanterar dödsrisk och återhämtning.
 
-        """ 
+        Input:
+            Inga funktionella inputs (hämtar allt från modell och agentens status).
+
+        Output:
+            Uppdaterar agentens position, status och sjukdomsprogression.
+        """
+        
         if self.status == "D":
             return  # döda rör sig inte eller smittar
 

@@ -1,2 +1,2 @@
 # ABM
-Vårt projekt i modelleringen :) 
+Vårt projekt i modelleringen :) :)
