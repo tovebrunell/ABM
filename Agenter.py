@@ -5,7 +5,7 @@ import random
 class SIRAgent(Agent): 
     """ Class för Agenterna:  
     """ 
-    
+    new_infected = 0
     def __init__(self, unique_id, model, status="S", vaccinated=False):
         """ Initierar SIR agent objects. 
 
@@ -45,7 +45,15 @@ class SIRAgent(Agent):
             if self.random.random() < infection_chance:
                 other.status = "I" ## Detta leder till att alla som är icke vaccinerade blir sjuka, detta behöver vi ändra
                 other.infector_id = self.unique_id # logga vem som smittade (du sparar att jag har smittat dig) 
-                self.model.log_infection(other) # lägg till i modellens logg 
+                self.model.log_infection(other) # lägg till i modellens logg
+
+                SIRAgent.new_infected += 1
+
+    def get_new_infected(self):
+        return SIRAgent.new_infected
+
+    def reset_new_infected(self):
+        SIRAgent.new_infected = 0
                 
 
     def step(self):
@@ -67,6 +75,7 @@ class SIRAgent(Agent):
             for other in cellmates:
                 if other != self:
                     self.try_infect(other)
+            
 
             # Öka dagar sjuk
             self.days_infected += 1
