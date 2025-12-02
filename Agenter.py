@@ -24,7 +24,9 @@ class SIRAgent(Agent):
     new_infected = 0
     
     def __init__(self, unique_id, model, status="S", vaccinated=False):
-       """
+        
+       
+        """
         Syfte:
             Initierar en SIR-agent med status, vaccinationstillstånd och trackar
             infektionstillstånd över tid.
