@@ -5,7 +5,7 @@ from mesa.datacollection import DataCollector
 import random
 
 def compute_Re(self):
-        return SIRAgent.get_new_infected(SIRAgent) / self.count_status("I") if self.count_status("I") else 0
+        return SIRAgent.get_new_infected(SIRAgent) / self.current_infected if self.current_infected else 0
 
 class SIRModel(Model):
     def __init__(self, N, width, height, initial_infected=1, vaccination_rate=0.0, mortality_rate=0.01):
@@ -30,6 +30,7 @@ class SIRModel(Model):
             agent_reporters={
                 "Agent status": "status",
                 "Agent position": "pos",
+                "New Infected": "new_infected"
             },  # agent egenskaper
         )
         self.current_day = 0
@@ -50,20 +51,15 @@ class SIRModel(Model):
             y = self.random.randrange(self.grid.height)
             self.grid.place_agent(agent, (x, y))
 
+        self.current_infected = sum(1 for a in self.agent_list if a.status == status)
+
     def step(self):
         #self.datacollector.collect(self)   # Detta är en data collector som han använder i föreläsningsexmplet och är rätt bra men är inte implementerad ännu.
 
-        current_infected_count = self.count_status("I")
         self.datacollector.collect(self)
-        
-        self.agents.shuffle_do("step")
-
-        Re = compute_Re(self)
-        
-        self.Re_history.append(Re)
         SIRAgent.reset_new_infected(SIRAgent)
-
-        self.current_day += 1 
+        self.current_infected = self.count_status("I")
+        self.agents.shuffle_do("step")        
 
     # Funktion för att räkna antal agenter med viss status
     def count_status(self, status):

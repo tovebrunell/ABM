@@ -3,7 +3,7 @@ from mesa.space import MultiGrid
 import random
 
 class SIRAgent(Agent): 
-    """ Class för Agenterna:  
+    """ Class för Agenterna:  SYFTE, INPUT, OUTPUT 
     """ 
     new_infected = 0
     def __init__(self, unique_id, model, status="S", vaccinated=False):
