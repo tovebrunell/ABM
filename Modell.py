@@ -32,6 +32,7 @@ class SIRModel(Model):
                 "Agent position": "pos",
             },  # agent egenskaper
         )
+        self.current_day = 0
 
         for i in range(N):
             vaccinated = self.random.random() < vaccination_rate
@@ -58,14 +59,19 @@ class SIRModel(Model):
 
         secondary = {}
         for event in self.infection_log:
-            inf = event["infector_id"]
-            if inf is not None:
-                secondary[inf] = secondary.get(inf, 0) + 1
+            if event["day"] == self.current_day: 
+                
+                inf = event["infector_id"]
+                
+                if inf is not None:
+                    secondary[inf] = secondary.get(inf, 0) + 1
 
         Re = compute_Re(self, current_infected_count)
         
         self.Re_history.append(Re)
         SIRAgent.reset_new_infected(SIRAgent)
+
+        self.current_day += 1 
 
     # Funktion för att räkna antal agenter med viss status
     def count_status(self, status):
@@ -77,4 +83,7 @@ class SIRModel(Model):
             "case_id": agent.unique_id, # vem har blivit smittad
             "infector_id": agent.infector_id, # vem har smittat
             "day": len(self.infection_log)  # Vilken dag? 
+            "day": self.current_day  # Vilken dag? 
+
+
         })
