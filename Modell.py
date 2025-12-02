@@ -4,7 +4,8 @@ from mesa.space import MultiGrid
 from mesa.datacollection import DataCollector
 import random
 
-def compute_Re(self, current_infected_count):
+def compute_Re(self):
+        return SIRAgent.get_new_infected(SIRAgent) / self.current_infected if self.current_infected else 0
 
         """
         Syfte:
@@ -18,8 +19,6 @@ def compute_Re(self, current_infected_count):
         Output:
             float: Beräknat Re-värde. 0 om inga infekterade finns.
         """
-    
-        return SIRAgent.get_new_infected(SIRAgent) / current_infected_count if current_infected_count else 0
 
 class SIRModel(Model):
 
@@ -81,6 +80,7 @@ class SIRModel(Model):
             agent_reporters={
                 "Agent status": "status",
                 "Agent position": "pos",
+                "New Infected": "new_infected"
             },  # agent egenskaper
         )
         self.current_day = 0
@@ -100,6 +100,8 @@ class SIRModel(Model):
             x = self.random.randrange(self.grid.width)
             y = self.random.randrange(self.grid.height)
             self.grid.place_agent(agent, (x, y))
+
+        self.current_infected = sum(1 for a in self.agent_list if a.status == status)
 
     def step(self):
 
@@ -121,25 +123,10 @@ class SIRModel(Model):
         """
         #self.datacollector.collect(self)   # Detta är en data collector som han använder i föreläsningsexmplet och är rätt bra men är inte implementerad ännu.
 
-        current_infected_count = self.count_status("I")
-        
-        self.agents.shuffle_do("step")
-
-        secondary = {}
-        for event in self.infection_log:
-            if event["day"] == self.current_day: 
-                
-                inf = event["infector_id"]
-                
-                if inf is not None:
-                    secondary[inf] = secondary.get(inf, 0) + 1
-
-        Re = compute_Re(self, current_infected_count)
-        
-        self.Re_history.append(Re)
+        self.datacollector.collect(self)
         SIRAgent.reset_new_infected(SIRAgent)
-
-        self.current_day += 1 
+        self.current_infected = self.count_status("I")
+        self.agents.shuffle_do("step")        
 
     # Funktion för att räkna antal agenter med viss status
     def count_status(self, status):
