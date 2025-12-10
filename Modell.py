@@ -2,7 +2,13 @@ from Agenter import SIRAgent
 from mesa import Agent, Model
 from mesa.space import MultiGrid
 from mesa.datacollection import DataCollector
+import pandas as pd
+import numpy as np
 import random
+
+# Läs in kalkylarket som beskriver topografin och konvertera till numpy matrix
+topography_df = pd.read_excel("Topografi karta.xlsx", header=None).transpose()
+topography_matrix = topography_df.to_numpy()
 
 def compute_Re(self):
         return SIRAgent.get_new_infected(SIRAgent) / self.current_infected if self.current_infected else 0
