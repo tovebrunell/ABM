@@ -1,6 +1,11 @@
 from mesa import Agent, Model
 from mesa.space import MultiGrid
+import pandas as pd
+import numpy as np
 import random
+
+topography_df = pd.read_excel("Topografi karta.xlsx", header=None).transpose()
+topography_matrix = topography_df.to_numpy()
 
 class SIRAgent(Agent): 
     """
@@ -66,6 +71,10 @@ class SIRAgent(Agent):
         new_position = self.random.choice(possible_steps) # random steg 
         self.model.grid.move_agent(self, new_position) # uppdaterar position
 
+    def get_topography(self):
+        x, y = self.pos
+        return topography_matrix[x, y]
+
     def try_infect(self, other):
         """
         Syfte:
@@ -81,11 +90,22 @@ class SIRAgent(Agent):
         """
         
         if other.status == "S" or other.status == "R": 
+            topography_value = self.get_topography()
+
+            if topography_value == 0:
+                topography_coefficient = 0.1
+            elif topography_value == 1:
+                topography_coefficient = 1
+            elif topography_value == 2:
+                topography_coefficient = 10
+            else:
+                topography_coefficient = 0.01
+                
             if other.status == "R":
                 # Vaccinerade har 3% risk att bli smittade
-                infection_chance = 0.03 * 0.19 # Ska vi ta gånger beta? räkna om Beta sen
+                infection_chance = 0.03 * 0.19 * topography_coefficient # Ska vi ta gånger beta? räkna om Beta sen
             else:
-                infection_chance = 1.0 * 0.19 # Ska vi ta gånger beta? Räkna om beta sen 
+                infection_chance = 1.0 * 0.19 * topography_coefficient # Ska vi ta gånger beta? Räkna om beta sen 
                 
             if self.random.random() < infection_chance:
                 other.status = "I" ## Detta leder till att alla som är icke vaccinerade blir sjuka, detta behöver vi ändra
@@ -161,5 +181,5 @@ class SIRAgent(Agent):
                 return
 
             # Återhämtning efter 8 dagar
-            if self.days_infected >= 8:
+            elif self.days_infected >= 8:
                 self.status = "R" # Vi antar att man inte kan bli sjuk 2 gånger! 
