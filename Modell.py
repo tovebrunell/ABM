@@ -71,37 +71,50 @@ class SIRModel(Model):
         # Lista för att spara Re över tid 
         self.Re_history = []
 
-        self.new_infections = 0
+        self.new_infected = 0
+
+        self.new_infected_total = 0
 
         self.datacollector = DataCollector(
             model_reporters={
-                "Re": compute_Re  # Funktion för att räkna ut Re (definierad längre ner)
+                "Re": compute_Re,  # Funktion för att räkna ut Re (definierad längre ner)
+                "New Infected": "new_infected",
+                "Susceptible": "current_susceptible",
+                "Infected": "current_infected",
+                "Resistant": "current_resistant",
+                "Dead": "current_dead",
+                "Total New Infected": "new_infected_total"
             },
             agent_reporters={
                 "Agent status": "status",
                 "Agent position": "pos",
-                "New Infected": "new_infected"
             },  # agent egenskaper
         )
         self.current_day = 0
 
         for i in range(N):
-            vaccinated = self.random.random() < vaccination_rate
-            if i < initial_infected:
+
+            if i < initial_infected: 
                 status = "I"
-            elif vaccinated:
+            
+            elif self.random.random() < vaccination_rate:
                 status = "R"  # Vaccinerade räknas som immun
+
             else:
                 status = "S"
 
-            agent = SIRAgent(i, self, status=status, vaccinated=vaccinated)
+            agent = SIRAgent(i, self, status=status)
             self.agent_list.append(agent)
 
             x = self.random.randrange(self.grid.width)
             y = self.random.randrange(self.grid.height)
             self.grid.place_agent(agent, (x, y))
 
-        self.current_infected = sum(1 for a in self.agent_list if a.status == status)
+        self.current_susceptible = sum(1 for a in self.agent_list if a.status == "S")
+        self.current_infected = sum(1 for a in self.agent_list if a.status == "I")
+        self.current_resistant = sum(1 for a in self.agent_list if a.status == "R")
+        self.current_dead = 0
+        
 
     def step(self):
 
@@ -121,12 +134,19 @@ class SIRModel(Model):
         Output:
             Inga direkta return-värden. Uppdaterar modellens tillstånd.
         """
-        #self.datacollector.collect(self)   # Detta är en data collector som han använder i föreläsningsexmplet och är rätt bra men är inte implementerad ännu.
-
+        
+        self.status_update()
+        self.current_susceptible = self.count_status("S")
+        self.current_infected = self.count_status("I")
+        self.current_resistant = self.count_status("R")
+        self.current_dead = self.count_status("D")
+        self.new_infected = SIRAgent.get_new_infected(SIRAgent)
+        self.new_infected_total += self.new_infected
         self.datacollector.collect(self)
         SIRAgent.reset_new_infected(SIRAgent)
-        self.current_infected = self.count_status("I")
-        self.agents.shuffle_do("step")        
+
+        
+        self.agents.shuffle_do("step")
 
     # Funktion för att räkna antal agenter med viss status
     def count_status(self, status):
@@ -144,7 +164,13 @@ class SIRModel(Model):
         """
         
         return sum(1 for a in self.agent_list if a.status == status)
-        
+
+    def status_update(self):
+        self.current_susceptible = self.count_status("S")
+        self.current_infected = self.count_status("I")
+        self.current_resistant = self.count_status("R")
+        self.current_dead = self.count_status("D")
+
     # Funktion för att logga infection
     def log_infection(self, agent):
         

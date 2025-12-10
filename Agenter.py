@@ -15,15 +15,14 @@ class SIRAgent(Agent):
         unique_id (int): Unikt ID för agenten.
         model (mesa.Model): Modellinstans som agenten tillhör.
         status (str): Initial hälsostatus ("S", "I", "R" eller "D"). Default="S".
-        vaccinated (bool): Om agenten är vaccinerad. Påverkar infektionstrolighet.
-
+        
     Output:
         En instans av SIRAgent.
     """
     
     new_infected = 0
     
-    def __init__(self, unique_id, model, status="S", vaccinated=False):
+    def __init__(self, unique_id, model, status="S"):
         
        
         """
@@ -35,7 +34,6 @@ class SIRAgent(Agent):
             unique_id (int): Agentens unika ID.
             model (Model): Modellen agenten tillhör.
             status (str): Startstatus ("S", "I", "R", "D").
-            vaccinated (bool): Om agenten är vaccinerad.
 
         Output:
             Inga direkta return-värden. Initialiserar instansvariabler.
@@ -44,7 +42,6 @@ class SIRAgent(Agent):
         super().__init__(model)  # bara model!
         self.unique_id = unique_id  # sätt unik ID själv
         self.status = status        # "S", "I", "R", "D"
-        self.vaccinated = vaccinated
         self.days_infected = 0
         self.infector_id = None # Hur många personer den har smittat
 
@@ -95,7 +92,7 @@ class SIRAgent(Agent):
                 other.infector_id = self.unique_id # logga vem som smittade (du sparar att jag har smittat dig) 
                 self.model.log_infection(other) # lägg till i modellens logg
 
-                SIRAgent.new_infected += 1
+                SIRAgent.new_infected += 1 # Lägger till en ny person som har smittats till variabeln
 
     def get_new_infected(self):
         """
