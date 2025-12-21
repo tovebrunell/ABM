@@ -11,7 +11,16 @@ topography_df = pd.read_excel("Topografi karta.xlsx", header=None).transpose()
 topography_matrix = topography_df.to_numpy()
 
 def compute_Re(self):
-        return SIRAgent.get_new_infected(SIRAgent) / self.current_infected if self.current_infected else 0
+        return self.R0 * (1 - (self.current_resistant/self.num_agents))
+
+def compute_R0(self):
+        
+        if self.finished_infections:
+            return self.total_secondary_infections / self.finished_infections
+        else:
+            return 0
+        
+        #return self.r0_new_infected / self.r0_finished_infected if self.r0_finished_infected else 0
 
         """
         Syfte:
@@ -46,7 +55,7 @@ class SIRModel(Model):
         En instans av SIRModel.
     """
     
-    def __init__(self, N, width, height, initial_infected=1, vaccination_rate=0.0, mortality_rate=0.01):
+    def __init__(self, N, width, height, initial_infected=1, vaccination_rate=0.0, mortality_rate=0.01, R0=15):
 
         """
         Syfte:
@@ -66,10 +75,10 @@ class SIRModel(Model):
         """
         
         super().__init__()
-        self.infection_log = []  # lista med alla infektioner
         self.num_agents = N
         self.grid = MultiGrid(width, height, True)
         self.mortality_rate = mortality_rate
+        self.R0 = R0
 
         # Agentlista (inte self.agents)
         self.agent_list = []
@@ -81,9 +90,13 @@ class SIRModel(Model):
 
         self.new_infected_total = 0
 
+        self.total_secondary_infections = 0
+        self.finished_infections = 0
+
         self.datacollector = DataCollector(
             model_reporters={
-                "Re": compute_Re,  # Funktion för att räkna ut Re (definierad längre ner)
+                "Re": compute_Re,  # Funktion för att räkna ut Re (definierad ovanför klassen)
+                "R0": compute_R0,  # Funktion för att räkna ut R0 (definierad ovanför klassen)
                 "New Infected": "new_infected",
                 "Susceptible": "current_susceptible",
                 "Infected": "current_infected",
@@ -97,6 +110,8 @@ class SIRModel(Model):
             },  # agent egenskaper
         )
         self.current_day = 0
+
+        SIRAgent.reset_shared_variables(SIRAgent)
 
         for i in range(N):
 
@@ -148,11 +163,15 @@ class SIRModel(Model):
         self.current_dead = self.count_status("D")
         self.new_infected = SIRAgent.get_new_infected(SIRAgent)
         self.new_infected_total += self.new_infected
+        self.r0_new_infected, self.r0_finished_infected = SIRAgent.get_r0_new_infected(SIRAgent)
         self.datacollector.collect(self)
         SIRAgent.reset_new_infected(SIRAgent)
 
         
         self.agents.shuffle_do("step")
+
+        for agent in self.agent_list:
+            agent.status = agent.next_state
 
     # Funktion för att räkna antal agenter med viss status
     def count_status(self, status):
@@ -176,27 +195,3 @@ class SIRModel(Model):
         self.current_infected = self.count_status("I")
         self.current_resistant = self.count_status("R")
         self.current_dead = self.count_status("D")
-
-    # Funktion för att logga infection
-    def log_infection(self, agent):
-        
-        """
-        Syfte:
-            Loggar en infektion till modellens infektion_log, inklusive
-            vem som blev smittad, vem som smittade och vilken dag det skedde.
-
-        Input:
-            agent (SIRAgent): Agenten som precis blivit infekterad.
-
-        Output:
-            Inga direkta return-värden. Lägger till ett nytt event i infection_log.
-        """
-        
-        self.infection_log.append({
-            "case_id": agent.unique_id, # vem har blivit smittad
-            "infector_id": agent.infector_id, # vem har smittat
-            "day": len(self.infection_log),  # Vilken dag? 
-            "day": self.current_day  # Vilken dag? 
-
-
-        })
