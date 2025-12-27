@@ -11,7 +11,7 @@ topography_df = pd.read_excel("Topografi karta.xlsx", header=None).transpose()
 topography_matrix = topography_df.to_numpy()
 
 def compute_Re(self):
-        return self.R0 * (1 - (self.current_resistant/self.num_agents))
+        return self.R0 * self.current_susceptible/self.num_agents
 
 def compute_R0(self):
         
