@@ -172,7 +172,6 @@ class SIRModel(Model):
         self.status_update()
         self.new_infected = SIRAgent.get_new_infected(SIRAgent) 
         self.new_infected_total += self.new_infected 
-        self.r0_new_infected, self.r0_finished_infected = SIRAgent.get_r0_new_infected(SIRAgent) 
         self.datacollector.collect(self) 
         SIRAgent.reset_new_infected(SIRAgent) # Återställer antalet nya infekterade för nästa tidssteg
         

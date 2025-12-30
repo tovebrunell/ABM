@@ -1,13 +1,16 @@
-from mesa import Agent, Model
-from mesa.space import MultiGrid
-import pandas as pd
-import numpy as np
 import random
 
+import numpy as np
+import pandas as pd
+from mesa import Agent, Model
+from mesa.space import MultiGrid
+
+# Läs in kalkylarket som beskriver topografin och konvertera till numpy matrix
 topography_df = pd.read_excel("Topografi karta.xlsx", header=None).transpose()
 topography_matrix = topography_df.to_numpy()
 
 class SIRAgent(Agent): 
+    
     """
     Agentklass för ett SIR-system i en smittspridningsmodell.
 
@@ -27,11 +30,6 @@ class SIRAgent(Agent):
     
     new_infected = 0
     
-    r0_new_infected = 0
-
-    r0_finished_infected = 0
-
-    
     def __init__(self, unique_id, model, status="S"):
         
        
@@ -50,12 +48,13 @@ class SIRAgent(Agent):
         """
         
         super().__init__(model)  # bara model!
-        self.unique_id = unique_id  # sätt unik ID själv
         self.status = status        # "S", "I", "R", "D"
         self.days_infected = 0
         self.secondary_infections = 0 # Hur många personer den har smittat
-        self.next_state = status
+        self.next_state = status # Används för att agenter inte ska kunna vara friska, bli infekterade, 
+                                 # och infektera någon annan i ett och samma tidssteg
 
+    #Funktion för när agenterna flyttar på sig i vår grid.
     def move(self):
         """
         Syfte:
@@ -77,20 +76,35 @@ class SIRAgent(Agent):
         new_position = self.random.choice(possible_steps) # random steg 
         self.model.grid.move_agent(self, new_position) # uppdaterar position
 
+    # Hämtar aktuellt värde från topografin för din position 
     def get_topography(self):
+        
+        """
+        Syfte:
+            Tar agentens nuvarande position och hämtar befolkningstäthetsvärdet från topografi matrisen/kartan.
+
+        Input:
+            Inga funktionella inputs (använder modellens grid och agentens aktuella position).
+
+        Output:
+            float: värde befolkningstäthetsvärde för agentens position.
+        """
+        
         x, y = self.pos
+        
         return topography_matrix[x, y]
 
     def try_infect(self, other):
+        
         """
         Syfte:
-            Försöker infektera en annan agent som befinner sig i samma cell.
+            Försöker infektera en annan agent som befinner sig i samma eller angränsade cell. 
 
         Input:
             other (SIRAgent): Den agent som eventuellt ska infekteras.
 
         Output:
-            Ändrar 'other.status' till "I" vid lyckad infektion.
+            Ändrar 'other.next_state' till "I" vid lyckad infektion.
             Loggar infektionen i modellen.
             Uppdaterar SIRAgent.new_infected vid smittspridning.
         """
@@ -108,16 +122,16 @@ class SIRAgent(Agent):
                 topography_coefficient = 0.01
                 
             if other.status == "R": 
-                # Vaccinerade har 3% risk att bli smittade
-                infection_chance = 0.03 * 0.075 * topography_coefficient # Ska vi ta gånger beta? räkna om Beta sen
+                # Resistenta har 3% risk att bli smittade
+                infection_chance = 0.03 * 0.075 * topography_coefficient
             else:
-                infection_chance = 1.0 * 0.075 * topography_coefficient # Ska vi ta gånger beta? Räkna om beta sen 
+                infection_chance = 1.0 * 0.075 * topography_coefficient
                 
             if self.random.random() < infection_chance:
-                other.next_state = "I" ## Detta leder till att alla som är icke vaccinerade blir sjuka, detta behöver vi ändra
+                other.next_state = "I"
 
-                SIRAgent.new_infected += 1 # Lägger till en ny person som har smittats till variabeln
-                self.secondary_infections += 1
+                SIRAgent.new_infected += 1 # Lägger till en ny person som har smittats till den globala variabeln
+                self.secondary_infections += 1 # Ökar antalet agenter som denna agent har smittat
 
     def get_new_infected(self):
         """
@@ -131,19 +145,6 @@ class SIRAgent(Agent):
             (int): Antalet nya infektioner detta tidssteg.
         """
         return SIRAgent.new_infected
-
-    def get_r0_new_infected(self):
-        """
-        Syfte:
-            Returnerar det totala antalet nya infektioner under nuvarande tidssteg.
-
-        Input:
-            Inga.
-
-        Output:
-            (int): Antalet nya infektioner detta tidssteg.
-        """
-        return SIRAgent.r0_new_infected, SIRAgent.r0_finished_infected
 
     def reset_new_infected(self):
         """
@@ -176,9 +177,21 @@ class SIRAgent(Agent):
         SIRAgent.r0_finished_infected = 0
         
     def finish_infection(self):
+        """
+        Syfte:
+            Uppdaterar värdena i modellen som håller reda på antalet nya infektioner per 
+            antalet avklarade infektioner och återställer räknare infför agentens nästa 
+            eventuella sjukdomsförlopp. 
+        Input:
+            Inga.
+
+        Output:
+            Inga. 
+        """
         self.model.total_secondary_infections += self.secondary_infections
         self.model.finished_infections += 1
         self.secondary_infections = 0
+        self.days_infected = 0
 
     def step(self):
         """
@@ -198,23 +211,24 @@ class SIRAgent(Agent):
         """
         
         if self.status == "D":
-            return  # döda rör sig inte eller smittar
+            return  # döda varken rör på sig eller smittar
 
         self.move()
         
         if self.status == "I":
 
+            # Tar positionerna för cellen agenten befinner sig och alla angränsande celler. 
             neighbor_positions = self.model.grid.get_neighborhood(self.pos,moore=True,include_center=True)
             
             for pos in neighbor_positions:
                 agents_here = self.model.grid.get_cell_list_contents([pos])
             
                 for other in agents_here:
-                    if other == self:
+                    if other == self: # Skippar sig själv
                         continue
             
                     else:
-                        self.try_infect(other)  # full probability
+                        self.try_infect(other)
             
 
             # Öka dagar sjuk
