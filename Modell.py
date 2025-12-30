@@ -1,40 +1,53 @@
+import random
+
+import numpy as np
+import pandas as pd
 from Agenter import SIRAgent
 from mesa import Agent, Model
-from mesa.space import MultiGrid
 from mesa.datacollection import DataCollector
-import pandas as pd
-import numpy as np
-import random
+from mesa.space import MultiGrid
 
 # Läs in kalkylarket som beskriver topografin och konvertera till numpy matrix
 topography_df = pd.read_excel("Topografi karta.xlsx", header=None).transpose()
 topography_matrix = topography_df.to_numpy()
 
-def compute_Re(self):
-        return self.R0 * self.current_susceptible/self.num_agents
+#Funktion för att räkna ut Re
+def compute_Re(modell):
+    
+    """
+    Syfte: 
+        Beräknar Re (effektivt reproduktionstal) baserat på andelen smittbara agenter gånger R0 värdet
 
-def compute_R0(self):
-        
-        if self.finished_infections:
-            return self.total_secondary_infections / self.finished_infections
-        else:
-            return 0
-        
-        #return self.r0_new_infected / self.r0_finished_infected if self.r0_finished_infected else 0
+    Input:
+        modell (SIRModel): Modellinstansen.
 
+    Output:
+        float: Beräknat Re-värde.
+    """
+    
+        return modell.R0 * modell.current_susceptible/modell.num_agents
+
+#Funktion för att räkna ut R0
+def compute_R0(modell):
+    
         """
         Syfte:
-            Beräknar momentant Re (effektivt reproduktionstal) baserat på antal nya
-            infektioner detta tidssteg och nuvarande antal infekterade.
+            Beräknar R0 för specifikt tidssteg genom att ta kvoten av nya infektioner och 
+            avklarade sjukdomsförlopp. 
 
         Input:
-            self (SIRModel): Modellinstansen.
-            current_infected_count (int): Antal infekterade vid aktuellt tidssteg.
+            modell (SIRModel): Modellinstansen.
 
         Output:
-            float: Beräknat Re-värde. 0 om inga infekterade finns.
+            float: Beräknat R0-värde. 0 om inga avklarade infektioner finns.
         """
+    
+        if modell.finished_infections:
+            return modell.total_secondary_infections / modell.finished_infections
+        else:
+            return 0
 
+#Modellen
 class SIRModel(Model):
 
     """
@@ -47,9 +60,10 @@ class SIRModel(Model):
         N (int): Antalet agenter i modellen.
         width (int): Bredd på grid.
         height (int): Höjd på grid.
-        initial_infected (int): Antal initialt infekterade agenter.
-        vaccination_rate (float): Andel som är vaccinerade.
-        mortality_rate (float): Dödsrisk per infekterad agent per dag.
+        initial_infected (int): Antal initialt infekterade agenter. Default = 1
+        vaccination_rate (float): Andel som är vaccinerade. Default = 0
+        mortality_rate (float): Dödsrisk per infekterad agent per dag. Default = 0.01
+        R0 (int): Uppskattat värde på reproduktionstalet R0. Default = 15
 
     Output:
         En instans av SIRModel.
@@ -60,18 +74,19 @@ class SIRModel(Model):
         """
         Syfte:
             Skapar en ny SIR-modell med specificerat antal agenter, placerar dem på grid
-            och initierar data­strukturer för att hålla koll på Re, infektioner och status.
+            och initierar datastrukturer för att hålla koll på Re, infektioner och status.
 
         Input:
-            N (int): Antalet agenter.
-            width (int): Grid-bredd.
-            height (int): Grid-höjd.
-            initial_infected (int): Antal som börjar som infekterade.
-            vaccination_rate (float): Andel agenter som vaccineras.
-            mortality_rate (float): Sannolikhet att en infekterad agent dör per dag.
+            N (int): Antalet agenter i modellen.
+            width (int): Bredd på grid.
+            height (int): Höjd på grid.
+            initial_infected (int): Antal initialt infekterade agenter. Default = 1
+            vaccination_rate (float): Andel som är vaccinerade. Default = 0
+            mortality_rate (float): Dödsrisk per infekterad agent per dag. Default = 0.01
+            R0 (int): Uppskattat värde på reproduktionstalet R0. Default = 15
 
         Output:
-            Inga direkta return-värden. Sätter upp modellens starttillstånd.
+            Inga direkta return-värden. Initierar modellens starttillstånd.
         """
         
         super().__init__()
@@ -82,17 +97,15 @@ class SIRModel(Model):
 
         # Agentlista (inte self.agents)
         self.agent_list = []
-        
-        # Lista för att spara Re över tid 
-        self.Re_history = []
 
-        self.new_infected = 0
+        self.new_infected = 0 # Antal nya infekterade under tidssteget
 
-        self.new_infected_total = 0
+        self.new_infected_total = 0 # Summa av nya infekterade
 
-        self.total_secondary_infections = 0
-        self.finished_infections = 0
+        self.total_secondary_infections = 0 # Summa av antalet nya infektioner som skett från avklarade sjukdomsförlopp
+        self.finished_infections = 0 # Antal avklarade sjukdomsförlopp
 
+        #Datacollector funktion som samlar data för analys
         self.datacollector = DataCollector(
             model_reporters={
                 "Re": compute_Re,  # Funktion för att räkna ut Re (definierad ovanför klassen)
@@ -109,17 +122,17 @@ class SIRModel(Model):
                 "Agent position": "pos",
             },  # agent egenskaper
         )
-        self.current_day = 0
 
-        SIRAgent.reset_shared_variables(SIRAgent)
+        SIRAgent.reset_shared_variables(SIRAgent) # Återställer variabler som delas mellan modellen och agenterna.
 
+        # Skapar N antal agenter, ger dem en hälsostatus, samt placerar agenterna slumpmässigt i vår grid.
         for i in range(N):
 
             if i < initial_infected: 
                 status = "I"
             
             elif self.random.random() < vaccination_rate:
-                status = "R"  # Vaccinerade räknas som immun
+                status = "R"  # Vaccinerade och återhämtade betraktas båda som resistenta 
 
             else:
                 status = "S"
@@ -131,10 +144,10 @@ class SIRModel(Model):
             y = self.random.randrange(self.grid.height)
             self.grid.place_agent(agent, (x, y))
 
-        self.current_susceptible = sum(1 for a in self.agent_list if a.status == "S")
-        self.current_infected = sum(1 for a in self.agent_list if a.status == "I")
-        self.current_resistant = sum(1 for a in self.agent_list if a.status == "R")
-        self.current_dead = 0
+        self.current_susceptible = sum(1 for a in self.agent_list if a.status == "S") 
+        self.current_infected = sum(1 for a in self.agent_list if a.status == "I") 
+        self.current_resistant = sum(1 for a in self.agent_list if a.status == "R") 
+        self.current_dead = 0 
         
 
     def step(self):
@@ -142,7 +155,7 @@ class SIRModel(Model):
         """
         Syfte:
             Kör ett tidssteg av modellen:
-            - Räknar aktuellt antal infekterade
+            - Räknar aktuellt antal agenter för varje hälsostatus
             - Kör alla agenters step-funktion
             - Loggar sekundärfall för smittkedjor
             - Beräknar och sparar Re
@@ -157,19 +170,15 @@ class SIRModel(Model):
         """
         
         self.status_update()
-        self.current_susceptible = self.count_status("S")
-        self.current_infected = self.count_status("I")
-        self.current_resistant = self.count_status("R")
-        self.current_dead = self.count_status("D")
-        self.new_infected = SIRAgent.get_new_infected(SIRAgent)
-        self.new_infected_total += self.new_infected
-        self.r0_new_infected, self.r0_finished_infected = SIRAgent.get_r0_new_infected(SIRAgent)
-        self.datacollector.collect(self)
-        SIRAgent.reset_new_infected(SIRAgent)
-
+        self.new_infected = SIRAgent.get_new_infected(SIRAgent) 
+        self.new_infected_total += self.new_infected 
+        self.r0_new_infected, self.r0_finished_infected = SIRAgent.get_r0_new_infected(SIRAgent) 
+        self.datacollector.collect(self) 
+        SIRAgent.reset_new_infected(SIRAgent) # Återställer antalet nya infekterade för nästa tidssteg
         
-        self.agents.shuffle_do("step")
+        self.agents.shuffle_do("step") # Genomför tidssteget
 
+        # Uppdaterar agenternas status enligt vad som skett i tidssteget 
         for agent in self.agent_list:
             agent.status = agent.next_state
 
@@ -178,8 +187,7 @@ class SIRModel(Model):
 
         """
         Syfte:
-            Räknar hur många agenter som har en viss status
-            (t.ex. 'S', 'I', 'R', 'D').
+            Räknar hur många agenter som har en viss status.
 
         Input:
             status (str): Den status som ska räknas.
@@ -191,6 +199,19 @@ class SIRModel(Model):
         return sum(1 for a in self.agent_list if a.status == status)
 
     def status_update(self):
+        
+        """
+        Syfte:
+            Räknar antalet agenter med varje hälsostatus och uppdaterar datacollector värdena.
+
+        Input:
+            Inga externa input (hämtar data med count_status funktionen).
+
+        Output:
+            Inga direkta return värden. Uppdaterar current_susceptible, current_infected, 
+            current_resistant, och current_dead.
+        """
+        
         self.current_susceptible = self.count_status("S")
         self.current_infected = self.count_status("I")
         self.current_resistant = self.count_status("R")
