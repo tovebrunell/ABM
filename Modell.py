@@ -13,7 +13,6 @@ topography_matrix = topography_df.to_numpy()
 
 #Funktion för att räkna ut Re
 def compute_Re(modell):
-    
     """
     Syfte: 
         Beräknar Re (effektivt reproduktionstal) baserat på andelen smittbara agenter gånger R0 värdet
@@ -25,27 +24,25 @@ def compute_Re(modell):
         float: Beräknat Re-värde.
     """
     
-        return modell.R0 * modell.current_susceptible/modell.num_agents
+    return modell.R0 * modell.current_susceptible/modell.num_agents
 
 #Funktion för att räkna ut R0
 def compute_R0(modell):
-    
-        """
-        Syfte:
-            Beräknar R0 för specifikt tidssteg genom att ta kvoten av nya infektioner och 
-            avklarade sjukdomsförlopp. 
+    """
+    Syfte:
+        Beräknar R0 för specifikt tidssteg genom att ta kvoten av nya infektioner och 
+        avklarade sjukdomsförlopp. 
 
-        Input:
-            modell (SIRModel): Modellinstansen.
+    Input:
+        modell (SIRModel): Modellinstansen.
 
-        Output:
-            float: Beräknat R0-värde. 0 om inga avklarade infektioner finns.
-        """
-    
-        if modell.finished_infections:
-            return modell.total_secondary_infections / modell.finished_infections
-        else:
-            return 0
+    Output:
+        float: Beräknat R0-värde. 0 om inga avklarade infektioner finns.
+    """
+    if modell.finished_infections:
+        return modell.total_secondary_infections / modell.finished_infections
+    else:
+        return 0
 
 #Modellen
 class SIRModel(Model):
@@ -69,7 +66,7 @@ class SIRModel(Model):
         En instans av SIRModel.
     """
     
-    def __init__(self, N, width, height, initial_infected=1, vaccination_rate=0.0, mortality_rate=0.01, R0=15):
+    def __init__(self, N, width, height, initial_infected=1, vaccination_rate=0.0, mortality_rate=0.01, R0=16):
 
         """
         Syfte:
