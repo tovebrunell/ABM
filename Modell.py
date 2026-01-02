@@ -66,7 +66,7 @@ class SIRModel(Model):
         En instans av SIRModel.
     """
     
-    def __init__(self, N, width, height, initial_infected=1, vaccination_rate=0.0, mortality_rate=0.01, R0=16):
+    def __init__(self, N, width, height, initial_infected=1, vaccination_rate=0.0, mortality_rate=0.01, R0=15):
 
         """
         Syfte:
